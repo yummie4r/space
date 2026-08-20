@@ -1,0 +1,241 @@
+import React, { useState } from 'react';
+import { X, Download, Copy, Check, FileText, Code2, Sparkles } from 'lucide-react';
+import { Blueprint } from '../types';
+
+interface ExportModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  blueprint: Blueprint;
+}
+
+export const ExportModal: React.FC<ExportModalProps> = ({
+  isOpen,
+  onClose,
+  blueprint,
+}) => {
+  const [exportFormat, setExportFormat] = useState<'markdown' | 'json'>('markdown');
+  const [copied, setCopied] = useState(false);
+
+  if (!isOpen) return null;
+
+  const generateMarkdown = (): string => {
+    return `# Master App Blueprint: ${blueprint.name}
+**Tagline:** ${blueprint.tagline}
+**Domain:** ${blueprint.domain}
+**Target Platform:** ${blueprint.platform}
+**Architecture Style:** ${blueprint.architectureStyle}
+**Version:** ${blueprint.version || '1.0.0'}
+**Generated Date:** ${blueprint.createdAt || new Date().toISOString().split('T')[0]}
+
+---
+
+## Executive Summary & Problem Space
+${blueprint.prd.coreValueProp.primaryProblem}
+
+### Core Engineered Solution
+${blueprint.prd.coreValueProp.coreSolution}
+
+---
+
+## 1. Product Requirement Document (PRD)
+
+### 1.1 Target User Personas
+${blueprint.prd.coreValueProp.personas.map(p => `
+#### ${p.name} - ${p.role}
+- **Pain Points:**
+${p.painPoints.map(pt => `  - ${pt}`).join('\n')}
+- **Jobs To Be Done:**
+${p.jobsToBeDone.map(j => `  - ${j}`).join('\n')}
+- **Key Value Unlock:** ${p.keyBenefit}
+`).join('\n')}
+
+### 1.2 North Star & Conversion Metrics
+${blueprint.prd.coreValueProp.conversionMetrics.map(m => `
+- **${m.metric} (${m.type}):** ${m.target}
+  - *Rationale:* ${m.rationale}
+`).join('\n')}
+
+### 1.3 MoSCoW Feature Matrix
+${blueprint.prd.featureMatrix.map(f => `
+#### [${f.tier}] ${f.name} (${f.category})
+- **Description:** ${f.description}
+- **Impact / Effort:** ${f.impact} Impact / ${f.effort} Effort
+- **User Story:** "${f.userStory}"
+`).join('\n')}
+
+### 1.4 Step-by-Step User Flow Journey
+${blueprint.prd.userFlowSequence.map(s => `
+**Step ${s.stepNumber} [${s.phase}]:** (Screen: \`${s.keyScreen}\`)
+- **User Action:** ${s.action}
+- **System Verification:** ${s.systemResponse}
+- **Fallback / Exception Handling:** ${s.fallbackOrEdgeCase}
+`).join('\n')}
+
+---
+
+## 2. Technical Architecture & System Design
+
+### 2.1 Recommended Production Tech Stack
+- **Frontend Tier:** ${blueprint.techArchitecture.techStack.frontend.name} (${blueprint.techArchitecture.techStack.frontend.framework})
+  - Libraries: ${blueprint.techArchitecture.techStack.frontend.libraries.join(', ')}
+  - Rationale: ${blueprint.techArchitecture.techStack.frontend.rationale}
+- **Backend Services:** ${blueprint.techArchitecture.techStack.backend.runtime} (${blueprint.techArchitecture.techStack.backend.framework})
+  - Protocol: ${blueprint.techArchitecture.techStack.backend.apiType}
+  - Rationale: ${blueprint.techArchitecture.techStack.backend.rationale}
+- **Database & Storage:** ${blueprint.techArchitecture.techStack.database.primary}
+  - Caching: ${blueprint.techArchitecture.techStack.database.caching}
+  - Vector/Search: ${blueprint.techArchitecture.techStack.database.searchOrVector}
+  - Rationale: ${blueprint.techArchitecture.techStack.database.rationale}
+- **Authentication & RBAC:** ${blueprint.techArchitecture.techStack.auth.provider}
+  - Mechanism: ${blueprint.techArchitecture.techStack.auth.mechanism}
+  - RBAC Roles: ${blueprint.techArchitecture.techStack.auth.rbacLevels.join(', ')}
+- **Infrastructure:** ${blueprint.techArchitecture.techStack.infrastructure.cloud} (${blueprint.techArchitecture.techStack.infrastructure.compute})
+  - CDN / WAF: ${blueprint.techArchitecture.techStack.infrastructure.cdn}
+
+### 2.2 Relational Data Schema (PostgreSQL DDL)
+\`\`\`sql
+${blueprint.techArchitecture.dataSchemaModel.sqlDDL}
+\`\`\`
+
+### 2.3 Indexing Strategy
+${blueprint.techArchitecture.dataSchemaModel.indexingStrategy.map(idx => `- ${idx}`).join('\n')}
+
+### 2.4 API Endpoint Catalog
+${blueprint.techArchitecture.apiEndpoints.map(api => `
+#### \`${api.method} ${api.path}\`
+${api.summary}
+- **Auth Required:** ${api.authRequired ? `Yes (${api.rbacRole})` : 'No'}
+- **cURL Command:**
+\`\`\`bash
+${api.curlExample}
+\`\`\`
+- **Response (200 OK):**
+\`\`\`json
+${api.responsePayload}
+\`\`\`
+`).join('\n')}
+
+---
+
+## 3. UI/UX & Component Engineering
+
+### 3.1 Design System Tokens
+- **Background:** \`${blueprint.uiUxComponentEngineering.designTokens.colorPalette.background}\`
+- **Surface:** \`${blueprint.uiUxComponentEngineering.designTokens.colorPalette.surface}\`
+- **Primary Accent:** \`${blueprint.uiUxComponentEngineering.designTokens.colorPalette.primaryAccent}\`
+- **Text Primary:** \`${blueprint.uiUxComponentEngineering.designTokens.colorPalette.textPrimary}\`
+
+### 3.2 Frontend Component Tree
+${blueprint.uiUxComponentEngineering.componentTree.map(c => `
+- **<${c.name} /> [${c.type}]:**
+  - Props: \`${c.props.join(', ')}\`
+  - State Flow: ${c.stateFlow}
+  ${c.contextOrStore ? `- Store: ${c.contextOrStore}` : ''}
+`).join('\n')}
+
+---
+*Generated by Master App Blueprint Studio powered by Google AI Studio.*
+`;
+  };
+
+  const exportText = exportFormat === 'markdown' ? generateMarkdown() : JSON.stringify(blueprint, null, 2);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(exportText);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleDownload = () => {
+    const filename = `${blueprint.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}-blueprint.${exportFormat === 'markdown' ? 'md' : 'json'}`;
+    const blob = new Blob([exportText], { type: exportFormat === 'markdown' ? 'text/markdown' : 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-[#0f172a] border border-gray-800 rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl text-gray-100">
+        {/* Header */}
+        <div className="p-5 border-b border-gray-800 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-blue-600/20 text-blue-400 border border-blue-500/30 flex items-center justify-center">
+              <Download className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-white">Export Master App Blueprint</h2>
+              <p className="text-xs text-gray-400">Export complete PRD, technical schemas, and component trees</p>
+            </div>
+          </div>
+
+          <button
+            onClick={onClose}
+            className="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-gray-800 transition cursor-pointer"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Format Selector & Actions Bar */}
+        <div className="px-5 py-3 border-b border-gray-800 flex items-center justify-between bg-[#0b0f19]">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setExportFormat('markdown')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer ${
+                exportFormat === 'markdown'
+                  ? 'bg-blue-600 text-white shadow'
+                  : 'text-gray-400 hover:text-white bg-gray-900'
+              }`}
+            >
+              <FileText className="w-3.5 h-3.5" />
+              <span>Markdown (.md)</span>
+            </button>
+
+            <button
+              onClick={() => setExportFormat('json')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer ${
+                exportFormat === 'json'
+                  ? 'bg-blue-600 text-white shadow'
+                  : 'text-gray-400 hover:text-white bg-gray-900'
+              }`}
+            >
+              <Code2 className="w-3.5 h-3.5" />
+              <span>JSON Schema (.json)</span>
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleCopy}
+              className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 border border-gray-700 transition cursor-pointer"
+            >
+              {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-gray-400" />}
+              <span>{copied ? 'Copied!' : 'Copy to Clipboard'}</span>
+            </button>
+
+            <button
+              onClick={handleDownload}
+              className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow transition cursor-pointer"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Download File</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Content Viewer */}
+        <div className="p-5 flex-1 overflow-y-auto">
+          <pre className="p-4 bg-[#080c14] border border-gray-800 rounded-xl text-xs font-mono text-gray-300 overflow-x-auto leading-relaxed max-h-[480px]">
+            <code>{exportText}</code>
+          </pre>
+        </div>
+      </div>
+    </div>
+  );
+};

@@ -1,0 +1,6 @@
+{
+  "name": "Master App Blueprint Studio",
+  "description": "Enterprise application architect & blueprint platform generating production-ready PRDs, technical architecture, SQL schemas, API specifications, and interactive UI component trees.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
